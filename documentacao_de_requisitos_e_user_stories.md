@@ -1,4 +1,5 @@
 # Documentação de Requisitos e User Stories
+
 ## Sistema Integrado de Gestão Educacional
 
 ---
@@ -39,6 +40,7 @@ Perfil com acesso pedagógico às turmas sob sua responsabilidade, sem permissõ
 ### 3.3 Administrativo
 
 Dividido em dois subníveis:
+
 - Secretaria Acadêmica
 - Gestão Administrativa (perfil supervisor)
 
