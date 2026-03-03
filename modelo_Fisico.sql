@@ -1,188 +1,161 @@
-/* modelo_Logico_Financeiro_V1: */
+-- ========================================================
+-- CADI BACKEND - CURRENT DATABASE SCHEMA
+-- Generated based on JPA Entities (Modular Monolith)
+-- ========================================================
 
-CREATE TABLE Unidade (
-    id_unidade int PRIMARY KEY,
-    nome varchar(100),
-    ativa BOOLEAN,
-    bairro varchar(100),
-    complemento varchar(100),
-    logradouro varchar(100),
-    cidade varchar(100),
-    CEP varchar(100),
-    estado varchar(100),
-    numero varchar(100)
+-- 1. IAM (Identity & Access Management)
+CREATE TABLE roles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE Conta_Financeira (
-    id_conta int PRIMARY KEY,
-    nome varchar(100),
-    tipo varchar(100),
-    saldo_atual DECIMAL,
-    id_unidade int
+CREATE TABLE users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    role_id BIGINT,
+    CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES roles(id)
 );
 
-CREATE TABLE Grupo_categoria (
-    id_grupo int PRIMARY KEY,
-    nome varchar(100),
-    tipo varchar(100)
+-- 2. People Management
+CREATE TABLE people (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    phone VARCHAR(255),
+    cpf VARCHAR(255) UNIQUE,
+    birth_date DATE,
+    street VARCHAR(255),
+    number VARCHAR(255),
+    complement VARCHAR(255),
+    neighborhood VARCHAR(255),
+    city VARCHAR(255),
+    state VARCHAR(255),
+    zip_code VARCHAR(255),
+    type VARCHAR(255), -- Enum: STUDENT, PROFESSOR, DONOR, VOLUNTEER, STAFF, PSYCHOLOGIST
+    user_id BIGINT UNIQUE,
+    CONSTRAINT fk_person_user FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE TABLE Doador_Aluno_Usuario_Funcionario (
-    id_usuario int PRIMARY KEY,
-    tipo varchar(100),
-    documento varchar(100),
-    contato varchar(100),
-    turma varchar(100),
-    ativo BOOLEAN,
-    matricula varchar(100),
-    id_apadrinhamento int,
-    nome varchar(100),
-    email varchar(100),
-    telefone varchar(100),
-    cpf varchar(100),
-    data_nascimento DATE,
-    logradouro varchar(100),
-    numero varchar(100),
-    complemento varchar(100),
-    bairro varchar(100),
-    cidade varchar(100),
-    estado varchar(100),
-    CEP varchar(100),
-    matricula_funcional varchar(100),
-    id_cargo int,
-    id_setor int,
-    tipo_contrato varchar(100),
-    data_admissao DATE,
-    carga_horaria_semanal int,
-    status varchar(100),
-    id_unidade int
+-- 3. Academic Module
+CREATE TABLE turmas (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
+    schedule VARCHAR(255),
+    professor_id BIGINT,
+    active BOOLEAN DEFAULT TRUE,
+    CONSTRAINT fk_turma_professor FOREIGN KEY (professor_id) REFERENCES people(id)
 );
 
-CREATE TABLE Projeto (
-    id_projeto int PRIMARY KEY,
-    nome varchar(100),
-    Descricao varchar(300),
-    meta_financeira int,
-    ativo BOOLEAN
+CREATE TABLE matriculas (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL,
+    turma_id BIGINT NOT NULL,
+    enrollment_date DATE,
+    status VARCHAR(255), -- e.g., ACTIVE, CANCELLED
+    CONSTRAINT fk_matricula_student FOREIGN KEY (student_id) REFERENCES people(id),
+    CONSTRAINT fk_matricula_turma FOREIGN KEY (turma_id) REFERENCES turmas(id)
 );
 
-CREATE TABLE Movimentacao_financeira (
-    id_movimentacao int PRIMARY KEY,
-    tipo varchar(100),
-    valor DECIMAL,
-    data DATE,
-    descricao varchar(300),
-    id_conta int,
-    id_categoria int,
-    id_projeto int,
-    id_apadrinhamento int,
-    id_doador int,
-    id_unidade int,
-    comprovante varchar(100),
-    usuario_responsavel int
+CREATE TABLE aulas (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    turma_id BIGINT NOT NULL,
+    date_time TIMESTAMP,
+    topic VARCHAR(255),
+    CONSTRAINT fk_aula_turma FOREIGN KEY (turma_id) REFERENCES turmas(id)
 );
 
-CREATE TABLE Categoria (
-    id_categoria int PRIMARY KEY,
-    nome varchar(100),
-    id_grupo int
+CREATE TABLE presencas (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    aula_id BIGINT NOT NULL,
+    student_id BIGINT NOT NULL,
+    present BOOLEAN NOT NULL,
+    observation VARCHAR(255),
+    CONSTRAINT fk_presenca_aula FOREIGN KEY (aula_id) REFERENCES aulas(id),
+    CONSTRAINT fk_presenca_student FOREIGN KEY (student_id) REFERENCES people(id)
 );
 
-CREATE TABLE Apadrinhamento (
-    id_apadrinhamento int PRIMARY KEY,
-    id_aluno int,
-    id_projeto int,
-    valor_mensal DECIMAL,
-    data_inicio DATE,
-    data_fim DATE,
-    status BOOLEAN
+-- 4. Finance Module
+CREATE TABLE projects (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description VARCHAR(255),
+    financial_goal DECIMAL(38,2),
+    active BOOLEAN DEFAULT TRUE
 );
 
-CREATE TABLE Cargo (
-    id_cargo int PRIMARY KEY,
-    nome varchar(100),
-    nivel varchar(100),
-    descricao varchar(100)
+CREATE TABLE financial_transactions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    type VARCHAR(255), -- Enum: INCOME, EXPENSE
+    transaction_value DECIMAL(38,2),
+    date_time TIMESTAMP,
+    description VARCHAR(255),
+    project_id BIGINT,
+    person_id BIGINT,
+    receipt_url VARCHAR(255),
+    CONSTRAINT fk_transaction_project FOREIGN KEY (project_id) REFERENCES projects(id),
+    CONSTRAINT fk_transaction_person FOREIGN KEY (person_id) REFERENCES people(id)
 );
 
-CREATE TABLE Setor (
-    id_setor int PRIMARY KEY,
-    nome varchar(100)
+-- 5. Communication Module
+CREATE TABLE notifications (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    message VARCHAR(1000) NOT NULL,
+    type VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sender_id BIGINT,
+    CONSTRAINT fk_notification_sender FOREIGN KEY (sender_id) REFERENCES users(id)
 );
- 
-ALTER TABLE Conta_Financeira ADD CONSTRAINT FK_Conta_Financeira_2
-    FOREIGN KEY (fk_Unidade_id_unidade)
-    REFERENCES Unidade (id_unidade)
-    ON DELETE CASCADE;
- 
-ALTER TABLE Conta_Financeira ADD CONSTRAINT FK_Conta_Financeira_3
-    FOREIGN KEY (id_unidade???)
-    REFERENCES ??? (???);
- 
-ALTER TABLE Doador_Aluno_Usuario_Funcionario ADD CONSTRAINT FK_Doador_Aluno_Usuario_Funcionario_2
-    FOREIGN KEY (id_apadrinhamento, id_endereco???, id_cargo???, id_setor???)
-    REFERENCES Apadrinhamento (id_apadrinhamento, ???, ???, ???);
- 
-ALTER TABLE Doador_Aluno_Usuario_Funcionario ADD CONSTRAINT FK_Doador_Aluno_Usuario_Funcionario_3
-    FOREIGN KEY (fk_Setor_id_setor)
-    REFERENCES Setor (id_setor);
- 
-ALTER TABLE Doador_Aluno_Usuario_Funcionario ADD CONSTRAINT FK_Doador_Aluno_Usuario_Funcionario_4
-    FOREIGN KEY (fk_Cargo_id_cargo)
-    REFERENCES Cargo (id_cargo);
- 
-ALTER TABLE Doador_Aluno_Usuario_Funcionario ADD CONSTRAINT FK_Doador_Aluno_Usuario_Funcionario_5
-    FOREIGN KEY (id_unidade)
-    REFERENCES Unidade (id_unidade);
- 
-ALTER TABLE Movimentacao_financeira ADD CONSTRAINT FK_Movimentacao_financeira_2
-    FOREIGN KEY (fk_Projeto_id_projeto)
-    REFERENCES Projeto (id_projeto)
-    ON DELETE CASCADE;
- 
-ALTER TABLE Movimentacao_financeira ADD CONSTRAINT FK_Movimentacao_financeira_3
-    FOREIGN KEY (fk_Unidade_id_unidade)
-    REFERENCES Unidade (id_unidade)
-    ON DELETE SET NULL;
- 
-ALTER TABLE Movimentacao_financeira ADD CONSTRAINT FK_Movimentacao_financeira_4
-    FOREIGN KEY (fk_Conta_Financeira_id_conta)
-    REFERENCES Conta_Financeira (id_conta)
-    ON DELETE CASCADE;
- 
-ALTER TABLE Movimentacao_financeira ADD CONSTRAINT FK_Movimentacao_financeira_5
-    FOREIGN KEY (fk_Categoria_id_categoria)
-    REFERENCES Categoria (id_categoria)
-    ON DELETE RESTRICT;
- 
-ALTER TABLE Movimentacao_financeira ADD CONSTRAINT FK_Movimentacao_financeira_6
-    FOREIGN KEY (fk_Doador_Aluno_Usuario_Funcionario_id_usuario)
-    REFERENCES Doador_Aluno_Usuario_Funcionario (id_usuario)
-    ON DELETE CASCADE;
- 
-ALTER TABLE Movimentacao_financeira ADD CONSTRAINT FK_Movimentacao_financeira_7
-    FOREIGN KEY (fk_Apadrinhamento_id_apadrinhamento)
-    REFERENCES Apadrinhamento (id_apadrinhamento)
-    ON DELETE CASCADE;
- 
-ALTER TABLE Movimentacao_financeira ADD CONSTRAINT FK_Movimentacao_financeira_8
-    FOREIGN KEY (id_conta???, id_categoria???, id_projeto???, id_apadrinhamento???, id_doador???, id_unidade???, usuario_responsavel???)
-    REFERENCES ??? (???);
- 
-ALTER TABLE Categoria ADD CONSTRAINT FK_Categoria_2
-    FOREIGN KEY (fk_Grupo_categoria_id_grupo)
-    REFERENCES Grupo_categoria (id_grupo)
-    ON DELETE RESTRICT;
- 
-ALTER TABLE Categoria ADD CONSTRAINT FK_Categoria_3
-    FOREIGN KEY (id_grupo???)
-    REFERENCES ??? (???);
- 
-ALTER TABLE Apadrinhamento ADD CONSTRAINT FK_Apadrinhamento_2
-    FOREIGN KEY (fk_Doador_Aluno_Usuario_Funcionario_id_usuario)
-    REFERENCES Doador_Aluno_Usuario_Funcionario (id_usuario)
-    ON DELETE CASCADE;
- 
-ALTER TABLE Apadrinhamento ADD CONSTRAINT FK_Apadrinhamento_3
-    FOREIGN KEY (id_aluno???, id_doador???, id_projeto???)
-    REFERENCES ??? (???);
+
+CREATE TABLE notification_users (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    notification_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    read BOOLEAN DEFAULT FALSE,
+    read_at TIMESTAMP,
+    sent_whatsapp BOOLEAN DEFAULT FALSE,
+    CONSTRAINT fk_notif_user_notif FOREIGN KEY (notification_id) REFERENCES notifications(id),
+    CONSTRAINT fk_notif_user_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE mural_posts (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content VARCHAR(2000) NOT NULL,
+    image_url VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    author_id BIGINT,
+    global BOOLEAN DEFAULT FALSE,
+    CONSTRAINT fk_mural_author FOREIGN KEY (author_id) REFERENCES users(id)
+);
+
+CREATE TABLE mural_post_roles (
+    post_id BIGINT NOT NULL,
+    role_id BIGINT NOT NULL,
+    PRIMARY KEY (post_id, role_id),
+    CONSTRAINT fk_mural_role_post FOREIGN KEY (post_id) REFERENCES mural_posts(id),
+    CONSTRAINT fk_mural_role_role FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+
+CREATE TABLE mural_post_turmas (
+    post_id BIGINT NOT NULL,
+    turma_id BIGINT NOT NULL,
+    PRIMARY KEY (post_id, turma_id),
+    CONSTRAINT fk_mural_turma_post FOREIGN KEY (post_id) REFERENCES mural_posts(id),
+    CONSTRAINT fk_mural_turma_turma FOREIGN KEY (turma_id) REFERENCES turmas(id)
+);
+
+-- 6. Psychosocial Module
+CREATE TABLE prontuarios (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    patient_id BIGINT NOT NULL,
+    psychologist_id BIGINT NOT NULL,
+    notes VARCHAR(4000) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    confidential_code VARCHAR(255),
+    CONSTRAINT fk_prontuario_patient FOREIGN KEY (patient_id) REFERENCES people(id),
+    CONSTRAINT fk_prontuario_psychologist FOREIGN KEY (psychologist_id) REFERENCES people(id)
+);
